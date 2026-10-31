@@ -1,0 +1,2040 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Writer's Sanctuary - High-Efficiency Writing Environment</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@300;400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300&display=swap" rel="stylesheet">
+    <!-- jsPDF Library for PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- docx Library for Word Document Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/7.8.2/docx.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Lora', 'serif'],
+                        classic: ['Merriweather', 'serif'],
+                        mono: ['Fira Code', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(147, 197, 253, 0.3);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(147, 197, 253, 0.5);
+        }
+
+        /* Ambient Theme Definitions - Sky Blue, Blue, Dark Blue, Black */
+        .theme-sky {
+            --bg-main: #e0f2fe;        /* Light sky blue */
+            --bg-editor: #f0f9ff;      /* Very pale sky frost */
+            --text-main: #0c4a6e;      /* Dark navy blue text for contrast */
+            --text-muted: #0369a1;     /* Mid blue muted */
+            --border-color: #bae6fd;   /* Soft sky border */
+            --accent: #0284c7;         /* Sky blue accent */
+        }
+        .theme-blue {
+            --bg-main: #1d4ed8;        /* Vibrant standard blue */
+            --bg-editor: #2563eb;      /* Rich blue editor */
+            --text-main: #eff6ff;      /* Bright white-blue text */
+            --text-muted: #bfdbfe;     /* Light blue muted */
+            --border-color: #3b82f6;   /* Blue border */
+            --accent: #60a5fa;         /* Light blue accent */
+        }
+        .theme-darkblue {
+            --bg-main: #0f172a;        /* Deep dark blue */
+            --bg-editor: #1e293b;      /* Slate dark blue */
+            --text-main: #f8fafc;      /* Crisp light text */
+            --text-muted: #94a3b8;     /* Muted slate blue */
+            --border-color: #334155;   /* Dark blue border */
+            --accent: #38bdf8;         /* Cyan blue accent */
+        }
+        .theme-black {
+            --bg-main: #000000;        /* Pure black */
+            --bg-editor: #09090b;      /* Obsidian black */
+            --text-main: #fafafa;      /* Off-white light text */
+            --text-muted: #a1a1aa;     /* Muted grey */
+            --border-color: #27272a;   /* Dark border */
+            --accent: #0ea5e9;         /* Blue accent */
+        }
+
+        /* Typewriter focus highlight mode */
+        .typewriter-mode #editor {
+            line-height: 2rem;
+        }
+
+        /* Editor transitions */
+        #editor {
+            transition: font-size 0.2s ease, font-family 0.2s ease;
+        }
+        
+        /* Smooth progress ring */
+        .progress-ring-circle {
+            transition: stroke-dashoffset 0.35s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+    </style>
+</head>
+<body class="theme-dark h-full font-sans bg-[var(--bg-main)] text-[var(--text-main)] transition-colors duration-300 flex flex-col overflow-hidden">
+
+    <!-- Top Navigation Header -->
+    <header id="top-nav" class="h-14 border-b border-[var(--border-color)] bg-[var(--bg-editor)] px-4 flex items-center justify-between shrink-0 transition-all duration-300 z-20">
+        <!-- Left Section: Document Info -->
+        <div class="flex items-center space-x-3 overflow-x-auto">
+            <i class="fa-solid fa-feather-pointed text-indigo-500 text-xl shrink-0"></i>
+            <input type="text" id="doc-title" value="Untitled Draft" placeholder="Document Title..." class="bg-transparent text-lg font-semibold border-b border-transparent hover:border-gray-500 focus:border-indigo-500 focus:outline-none px-1 py-0.5 rounded text-[var(--text-main)] transition">
+            
+            <!-- Metadata Selectors: Write-Up Type, Genre & Point of View -->
+            <div class="hidden sm:flex items-center gap-1.5 shrink-0 text-xs">
+                <select id="select-writeup-type" title="Type of Write-Up" class="bg-black/20 border border-[var(--border-color)] rounded px-2 py-1 text-gray-300 focus:outline-none focus:border-indigo-500">
+                    <option value="Novel Chapter">Novel Chapter</option>
+                    <option value="Short Story">Short Story</option>
+                    <option value="Essay">Essay</option>
+                    <option value="Blog Post">Blog Post</option>
+                    <option value="Article">Article</option>
+                    <option value="Screenplay">Screenplay</option>
+                    <option value="Poetry">Poetry</option>
+                    <option value="Other">Other Type</option>
+                </select>
+                <select id="select-genre" title="Genre" class="bg-black/20 border border-[var(--border-color)] rounded px-2 py-1 text-gray-300 focus:outline-none focus:border-indigo-500">
+                    <option value="General Fiction">General Fiction</option>
+                    <option value="Sci-Fi">Sci-Fi</option>
+                    <option value="Fantasy">Fantasy</option>
+                    <option value="Thriller / Mystery">Thriller / Mystery</option>
+                    <option value="Romance">Romance</option>
+                    <option value="Non-Fiction">Non-Fiction</option>
+                    <option value="Memoir">Memoir</option>
+                    <option value="Technical">Technical</option>
+                </select>
+                <select id="select-pov" title="Point of View (POV)" class="bg-black/20 border border-[var(--border-color)] rounded px-2 py-1 text-gray-300 focus:outline-none focus:border-indigo-500">
+                    <option value="1st Person">1st Person (I / We)</option>
+                    <option value="2nd Person">2nd Person (You)</option>
+                    <option value="3rd Person Limited">3rd Person Limited</option>
+                    <option value="3rd Person Omniscient">3rd Person Omniscient</option>
+                    <option value="3rd Person Objective">3rd Person Objective</option>
+                </select>
+            </div>
+
+            <span id="save-status" class="text-xs text-gray-400 flex items-center gap-1 shrink-0">
+                <i class="fa-solid fa-cloud-arrow-up text-green-400"></i> Saved
+            </span>
+        </div>
+
+        <!-- Center Section: Quick Stats & Sprint Timer -->
+        <div class="hidden md:flex items-center space-x-6">
+            <!-- Sprint Timer Widget -->
+            <div class="flex items-center space-x-2 bg-black/20 px-3 py-1.5 rounded-full border border-[var(--border-color)] text-sm">
+                <i class="fa-solid fa-stopwatch text-indigo-400"></i>
+                <span id="timer-display" class="font-mono font-medium">25:00</span>
+                <button id="timer-toggle-btn" class="text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-0.5 rounded transition">Start</button>
+                <button id="timer-reset-btn" class="text-xs text-gray-400 hover:text-white px-1"><i class="fa-solid fa-rotate-right"></i></button>
+            </div>
+
+            <!-- Pace / WPM Indicator -->
+            <div class="text-xs flex items-center gap-2 text-gray-400">
+                <span>Speed: <strong id="wpm-live" class="text-[var(--text-main)]">0</strong> WPM</span>
+            </div>
+        </div>
+
+        <!-- Right Section: Tools & Controls -->
+        <div class="flex items-center space-x-2">
+            <!-- Save to Archive Button -->
+            <button id="btn-save-archive" title="Save Current Work to Archive" class="p-2 hover:bg-gray-700/50 rounded-lg text-emerald-400 hover:text-emerald-300 transition">
+                <i class="fa-solid fa-box-archive"></i>
+            </button>
+
+            <!-- Open Archive Drawer Button -->
+            <button id="btn-open-archive" title="Archive / Unfinished Drafts Library" class="p-2 hover:bg-gray-700/50 rounded-lg text-amber-400 hover:text-amber-300 transition relative">
+                <i class="fa-solid fa-folder-open"></i>
+                <span id="archive-badge" class="absolute -top-1 -right-1 bg-indigo-600 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full hidden">0</span>
+            </button>
+
+            <!-- Fullscreen / Focus Mode Toggle -->
+            <button id="btn-focus-mode" title="Distraction-Free Focus Mode (F11 / Ctrl+Shift+F)" class="p-2 hover:bg-gray-700/50 rounded-lg text-gray-300 hover:text-white transition">
+                <i class="fa-solid fa-expand"></i>
+            </button>
+
+            <!-- Scratchpad Sidebar Toggle -->
+            <button id="btn-toggle-sidebar" title="Toggle Scratchpad & Notes" class="p-2 hover:bg-gray-700/50 rounded-lg text-gray-300 hover:text-white transition">
+                <i class="fa-solid fa-book-bookmark"></i>
+            </button>
+
+            <!-- Settings & Customization -->
+            <button id="btn-toggle-settings" title="Editor Settings" class="p-2 hover:bg-gray-700/50 rounded-lg text-gray-300 hover:text-white transition">
+                <i class="fa-solid fa-sliders"></i>
+            </button>
+
+            <!-- Export Button & Dropdown Menu -->
+            <div class="relative">
+                <button id="btn-export" title="Export Document" class="p-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition text-sm flex items-center gap-1.5 px-3">
+                    <i class="fa-solid fa-download"></i>
+                    <span class="hidden sm:inline">Export</span>
+                    <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                </button>
+                <div id="export-menu" class="hidden absolute right-0 mt-2 w-44 bg-[var(--bg-editor)] border border-[var(--border-color)] rounded-lg shadow-xl py-1.5 z-50 text-xs">
+                    <button id="export-pdf" class="w-full text-left px-3 py-2 hover:bg-black/30 flex items-center gap-2 text-[var(--text-main)]">
+                        <i class="fa-solid fa-file-pdf text-red-400"></i> Export as PDF (.pdf)
+                    </button>
+                    <button id="export-docx" class="w-full text-left px-3 py-2 hover:bg-black/30 flex items-center gap-2 text-[var(--text-main)]">
+                        <i class="fa-solid fa-file-word text-blue-400"></i> Export as Word (.docx)
+                    </button>
+                    <button id="export-txt" class="w-full text-left px-3 py-2 hover:bg-black/30 flex items-center gap-2 text-[var(--text-main)]">
+                        <i class="fa-solid fa-file-lines text-amber-400"></i> Export as Text (.txt)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <div class="flex-1 flex overflow-hidden relative">
+
+        <!-- Left Toolbar / Quick Actions (Collapsible) -->
+        <aside class="w-12 border-r border-[var(--border-color)] bg-[var(--bg-editor)] flex flex-col items-center py-4 space-y-4 shrink-0">
+            <button id="tool-search" title="Find & Replace" class="p-2.5 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </button>
+            <button id="tool-dict" title="Quick Dictionary / Thesaurus" class="p-2.5 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition">
+                <i class="fa-solid fa-spell-check"></i>
+            </button>
+            <button id="tool-shakespeare" title="Shakespearean Writing Dictionary & Lexicon" class="p-2.5 text-amber-400 hover:text-amber-300 hover:bg-amber-900/20 rounded-lg transition">
+                <i class="fa-solid fa-masks-theater text-lg"></i>
+            </button>
+            <button id="tool-mindmap" title="Generate Writing Mind Map" class="p-2.5 text-cyan-400 hover:text-cyan-300 hover:bg-cyan-900/20 rounded-lg transition">
+                <i class="fa-solid fa-network-wired text-lg"></i>
+            </button>
+            <button id="tool-cheatsheet" title="Markdown Quick Reference" class="p-2.5 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition">
+                <i class="fa-brands fa-markdown text-lg"></i>
+            </button>
+            <button id="tool-clear" title="Clear Editor (Start Fresh)" class="p-2.5 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-lg transition">
+                <i class="fa-solid fa-trash-can"></i>
+            </button>
+        </aside>
+
+        <!-- Main Editor Section -->
+        <main class="flex-1 flex flex-col items-center justify-start overflow-y-auto relative p-4 sm:p-8" id="editor-wrapper">
+            <!-- Center Writing Sheet -->
+            <div class="w-full max-w-3xl flex-1 flex flex-col">
+                <textarea 
+                    id="editor" 
+                    placeholder="Start typing your ideas here... No distractions, just your words."
+                    class="w-full h-full min-h-[75vh] bg-transparent resize-none focus:outline-none font-serif text-lg leading-relaxed text-[var(--text-main)] placeholder-gray-500/50"
+                    spellcheck="true"
+                    autofocus
+                ></textarea>
+            </div>
+
+            <!-- Floating Exit Focus Button (Visible only in Focus Mode) -->
+            <button id="btn-exit-focus" class="hidden fixed top-4 right-4 bg-gray-800/80 hover:bg-gray-700 text-white text-xs px-3 py-1.5 rounded-full border border-gray-600 backdrop-blur transition z-50">
+                <i class="fa-solid fa-compress mr-1"></i> Exit Focus Mode
+            </button>
+        </main>
+
+        <!-- Right Drawer: Scratchpad / Notes / Character Cards -->
+        <aside id="sidebar-scratchpad" class="w-80 border-l border-[var(--border-color)] bg-[var(--bg-editor)] flex flex-col transition-all duration-300 translate-x-0 hidden md:flex shrink-0 z-10">
+            <!-- Sidebar Header -->
+            <div class="p-3 border-b border-[var(--border-color)] flex items-center justify-between">
+                <div class="flex space-x-1">
+                    <button id="tab-notes-btn" class="px-3 py-1 text-xs font-semibold rounded-md bg-indigo-600 text-white">Notes</button>
+                    <button id="tab-outline-btn" class="px-3 py-1 text-xs font-semibold rounded-md text-gray-400 hover:text-white">Outline</button>
+                </div>
+                <button id="close-sidebar-btn" class="text-gray-400 hover:text-white text-sm p-1">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Sidebar Content Panels -->
+            <div class="flex-1 overflow-y-auto p-3 space-y-4">
+                <!-- Quick Notes Panel -->
+                <div id="panel-notes" class="h-full flex flex-col space-y-2">
+                    <label class="text-xs uppercase tracking-wider text-gray-400 font-bold">Scratchpad / Quick Plot</label>
+                    <textarea id="scratchpad-text" placeholder="Jot down quick ideas, plot points, character names, or research snippet here..." class="w-full flex-1 bg-black/20 rounded-lg border border-[var(--border-color)] p-3 text-sm focus:outline-none focus:border-indigo-500 text-[var(--text-main)] resize-none"></textarea>
+                </div>
+
+                <!-- Outline Panel (Hidden by default) -->
+                <div id="panel-outline" class="hidden space-y-3">
+                    <div class="flex justify-between items-center">
+                        <label class="text-xs uppercase tracking-wider text-gray-400 font-bold">Chapter / Scene Outline</label>
+                        <button id="add-outline-item" class="text-xs text-indigo-400 hover:text-indigo-300"><i class="fa-solid fa-plus"></i> Add</button>
+                    </div>
+                    <div id="outline-list" class="space-y-2">
+                        <!-- Dynamic items added here -->
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Bottom Status & Metrics Bar -->
+    <footer id="bottom-bar" class="h-10 border-t border-[var(--border-color)] bg-[var(--bg-editor)] px-4 flex items-center justify-between text-xs text-gray-400 shrink-0 z-20">
+        <div class="flex items-center space-x-4 overflow-x-auto">
+            <span>Words: <strong id="stat-words" class="text-[var(--text-main)]">0</strong></span>
+            <span>Chars: <strong id="stat-chars" class="text-[var(--text-main)]">0</strong></span>
+            <span class="hidden sm:inline">Paragraphs: <strong id="stat-paragraphs" class="text-[var(--text-main)]">0</strong></span>
+            <span class="hidden md:inline">Est. Read Time: <strong id="stat-readtime" class="text-[var(--text-main)]">0 min</strong></span>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <div class="flex items-center space-x-2">
+                <span class="hidden sm:inline">Goal:</span>
+                <input type="number" id="input-word-goal" value="1000" min="100" step="100" class="w-16 bg-black/20 border border-[var(--border-color)] rounded px-1.5 py-0.5 text-xs text-center focus:outline-none focus:border-indigo-500 text-[var(--text-main)]">
+                <span>words</span>
+            </div>
+            
+            <div class="w-24 bg-gray-700/50 rounded-full h-2 overflow-hidden hidden sm:block">
+                <div id="goal-progress-bar" class="bg-indigo-500 h-full w-0 transition-all duration-300"></div>
+            </div>
+            <span id="goal-percent" class="font-bold text-indigo-400 w-8 text-right">0%</span>
+        </div>
+    </footer>
+
+    <!-- MODAL: Shakespearean Writing Assistant -->
+    <div id="modal-shakespeare" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-[var(--bg-editor)] border border-[var(--border-color)] rounded-xl w-full max-w-2xl p-5 shadow-2xl space-y-4 flex flex-col max-h-[85vh]">
+            <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-3 shrink-0">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-masks-theater text-amber-400 text-xl"></i>
+                    <div>
+                        <h3 class="font-semibold text-lg">Shakespearean Writing Assistant</h3>
+                        <p class="text-xs text-gray-400">Generate Shakespearean prose or browse Elizabethan vocabulary</p>
+                    </div>
+                </div>
+                <button class="close-modal text-gray-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <!-- Tabs: Generator vs Dictionary -->
+            <div class="flex border-b border-[var(--border-color)] space-x-6 shrink-0">
+                <button id="tab-bard-gen" class="pb-2 text-xs font-bold text-amber-400 border-b-2 border-amber-400 flex items-center gap-1.5">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> AI Shakespeare Translator
+                </button>
+                <button id="tab-bard-dict" class="pb-2 text-xs font-semibold text-gray-400 hover:text-gray-200 flex items-center gap-1.5">
+                    <i class="fa-solid fa-book-bookmark"></i> Lexicon & Dictionary
+                </button>
+            </div>
+
+            <!-- SECTION 1: AI Generator -->
+            <div id="section-bard-gen" class="space-y-3 overflow-y-auto flex-1">
+                <div>
+                    <label class="text-xs text-gray-400 block mb-1">Enter Modern English Text or Sentence</label>
+                    <textarea id="bard-input-text" placeholder="e.g. Why are you looking at me like that? We need to leave before sunset..." class="w-full h-24 bg-black/20 border border-[var(--border-color)] rounded-lg p-3 text-xs focus:outline-none focus:border-amber-500 text-[var(--text-main)] resize-none"></textarea>
+                </div>
+
+                <!-- Quick Presets -->
+                <div class="flex flex-wrap gap-1.5 items-center">
+                    <span class="text-[11px] text-gray-400 mr-1">Quick Presets:</span>
+                    <button data-preset="Why are you ignoring me?" class="bard-preset-btn bg-black/30 hover:bg-amber-950/40 text-amber-300 border border-amber-900/40 px-2 py-0.5 rounded text-[11px]">Why are you ignoring me?</button>
+                    <button data-preset="Listen to me, my friend, we must run quickly." class="bard-preset-btn bg-black/30 hover:bg-amber-950/40 text-amber-300 border border-amber-900/40 px-2 py-0.5 rounded text-[11px]">Listen to me, my friend...</button>
+                    <button data-preset="I will love you forever until my dying breath." class="bard-preset-btn bg-black/30 hover:bg-amber-950/40 text-amber-300 border border-amber-900/40 px-2 py-0.5 rounded text-[11px]">Eternal Love Declaration</button>
+                </div>
+
+                <div class="flex justify-between items-center pt-1">
+                    <span id="bard-gen-status" class="text-xs text-amber-400 hidden"></span>
+                    <button id="btn-generate-shakespeare" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-lg shadow-amber-900/20 ml-auto">
+                        <i class="fa-solid fa-feather"></i> Transform to Shakespearean
+                    </button>
+                </div>
+
+                <!-- Output Box -->
+                <div class="pt-2">
+                    <label class="text-xs text-gray-400 block mb-1">Shakespearean Output</label>
+                    <div id="bard-output-box" class="min-h-[90px] p-3 bg-black/30 border border-[var(--border-color)] rounded-lg text-xs font-serif leading-relaxed text-gray-400 italic text-center flex items-center justify-center">
+                        Your transformed Elizabethan prose will appear here...
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-2 pt-1">
+                    <button id="btn-copy-bard-output" class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-200 rounded-lg text-xs font-semibold flex items-center gap-1">
+                        <i class="fa-solid fa-copy"></i> Copy
+                    </button>
+                    <button id="btn-insert-bard-output" class="px-4 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1">
+                        <i class="fa-solid fa-plus"></i> Insert into Editor
+                    </button>
+                </div>
+            </div>
+
+            <!-- SECTION 2: Dictionary / Lexicon Browser -->
+            <div id="section-bard-dict" class="hidden space-y-3 overflow-y-auto flex-1">
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <div class="relative flex-1">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-gray-400"></i>
+                        <input type="text" id="bard-search-input" placeholder="Search Shakespearean terms (e.g., thou, wherefore, hark)..." class="w-full bg-black/20 border border-[var(--border-color)] rounded-lg pl-8 pr-3 py-1.5 text-xs focus:outline-none focus:border-amber-500 text-[var(--text-main)]">
+                    </div>
+                    <div class="flex gap-1 overflow-x-auto pb-1 sm:pb-0">
+                        <button data-cat="ALL" class="bard-tab px-2.5 py-1 rounded-md bg-amber-600 text-white font-medium text-xs whitespace-nowrap">All</button>
+                        <button data-cat="Pronouns" class="bard-tab px-2.5 py-1 rounded-md bg-black/20 text-gray-300 hover:bg-gray-700 text-xs whitespace-nowrap">Pronouns</button>
+                        <button data-cat="Verbs & Words" class="bard-tab px-2.5 py-1 rounded-md bg-black/20 text-gray-300 hover:bg-gray-700 text-xs whitespace-nowrap">Verbs & Words</button>
+                        <button data-cat="Exclamations" class="bard-tab px-2.5 py-1 rounded-md bg-black/20 text-gray-300 hover:bg-gray-700 text-xs whitespace-nowrap">Exclamations</button>
+                        <button data-cat="Connectors" class="bard-tab px-2.5 py-1 rounded-md bg-black/20 text-gray-300 hover:bg-gray-700 text-xs whitespace-nowrap">Connectors</button>
+                    </div>
+                </div>
+
+                <div id="bard-dictionary-list" class="space-y-2 pr-1 min-h-[220px]">
+                    <!-- Dynamic Dictionary Items -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: POV Conversion Prompt Confirm Modal -->
+    <div id="modal-pov-confirm" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-[var(--bg-editor)] border border-[var(--border-color)] rounded-xl w-full max-w-md p-5 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-3">
+                <h3 class="font-semibold text-base flex items-center gap-2"><i class="fa-solid fa-wand-magic-sparkles text-indigo-400"></i> Rewrite Selected Text POV</h3>
+                <button class="close-modal text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p id="pov-confirm-desc" class="text-xs text-gray-300">You have selected text in your editor. Would you like to rewrite the selected passage into <strong id="pov-target-name" class="text-indigo-400">1st Person</strong>?</p>
+            <div id="pov-spinner" class="hidden flex items-center justify-center space-y-2 py-4">
+                <i class="fa-solid fa-circle-notch fa-spin text-indigo-400 text-2xl"></i>
+                <span class="text-xs text-gray-400 ml-2">Transforming perspective...</span>
+            </div>
+            <div class="flex justify-end space-x-2 pt-2">
+                <button class="close-modal px-4 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs font-semibold">Cancel</button>
+                <button id="btn-confirm-pov-transform" class="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold">Transform Selection</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Archive & Unfinished Drafts Manager -->
+    <div id="modal-archive" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-[var(--bg-editor)] border border-[var(--border-color)] rounded-xl w-full max-w-2xl p-5 shadow-2xl space-y-4 flex flex-col max-h-[85vh]">
+            <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-3">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-folder-open text-amber-400 text-xl"></i>
+                    <div>
+                        <h3 class="font-semibold text-lg">Unfinished Drafts Archive</h3>
+                        <p class="text-xs text-gray-400">Manage and resume your saved write-ups</p>
+                    </div>
+                </div>
+                <button class="close-modal text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <!-- Search & Filter Controls -->
+            <div class="flex flex-col sm:flex-row gap-2">
+                <div class="relative flex-1">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-gray-400"></i>
+                    <input type="text" id="archive-search" placeholder="Search saved drafts..." class="w-full bg-black/20 border border-[var(--border-color)] rounded-lg pl-8 pr-3 py-1.5 text-xs focus:outline-none focus:border-indigo-500 text-[var(--text-main)]">
+                </div>
+                <!-- Write-Up Type Filter -->
+                <select id="archive-filter-type" class="bg-black/20 border border-[var(--border-color)] rounded-lg px-2 py-1.5 text-xs text-gray-300 focus:outline-none focus:border-indigo-500">
+                    <option value="ALL">All Types</option>
+                    <option value="Novel Chapter">Novel Chapter</option>
+                    <option value="Short Story">Short Story</option>
+                    <option value="Essay">Essay</option>
+                    <option value="Blog Post">Blog Post</option>
+                    <option value="Article">Article</option>
+                    <option value="Screenplay">Screenplay</option>
+                    <option value="Poetry">Poetry</option>
+                    <option value="Other">Other Type</option>
+                </select>
+                <!-- Genre Filter -->
+                <select id="archive-filter-genre" class="bg-black/20 border border-[var(--border-color)] rounded-lg px-2 py-1.5 text-xs text-gray-300 focus:outline-none focus:border-indigo-500">
+                    <option value="ALL">All Genres</option>
+                    <option value="General Fiction">General Fiction</option>
+                    <option value="Sci-Fi">Sci-Fi</option>
+                    <option value="Fantasy">Fantasy</option>
+                    <option value="Thriller / Mystery">Thriller / Mystery</option>
+                    <option value="Romance">Romance</option>
+                    <option value="Non-Fiction">Non-Fiction</option>
+                    <option value="Memoir">Memoir</option>
+                    <option value="Technical">Technical</option>
+                </select>
+                <button id="btn-create-new-draft" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shrink-0">
+                    <i class="fa-solid fa-plus"></i> New Blank Draft
+                </button>
+            </div>
+
+            <!-- Drafts List -->
+            <div id="archive-list" class="flex-1 overflow-y-auto space-y-2 pr-1 min-h-[220px]">
+                <!-- Dynamic Draft Cards -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 1: Find & Replace -->
+    <div id="modal-search" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-[var(--bg-editor)] border border-[var(--border-color)] rounded-xl w-full max-w-md p-5 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center">
+                <h3 class="font-semibold text-lg flex items-center gap-2"><i class="fa-solid fa-magnifying-glass text-indigo-400"></i> Find & Replace</h3>
+                <button class="close-modal text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <label class="text-xs text-gray-400 block mb-1">Find Text</label>
+                    <input type="text" id="find-input" class="w-full bg-black/20 border border-[var(--border-color)] rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="text-xs text-gray-400 block mb-1">Replace With</label>
+                    <input type="text" id="replace-input" class="w-full bg-black/20 border border-[var(--border-color)] rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-500">
+                </div>
+            </div>
+            <div class="flex justify-end space-x-2 pt-2">
+                <button id="btn-do-find" class="px-4 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs font-semibold">Count Matches</button>
+                <button id="btn-do-replace" class="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold">Replace All</button>
+            </div>
+            <p id="search-results-info" class="text-xs text-indigo-400 hidden"></p>
+        </div>
+    </div>
+
+    <!-- MODAL 2: Quick Dictionary / Thesaurus -->
+    <div id="modal-dict" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-[var(--bg-editor)] border border-[var(--border-color)] rounded-xl w-full max-w-md p-5 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center">
+                <h3 class="font-semibold text-lg flex items-center gap-2"><i class="fa-solid fa-spell-check text-indigo-400"></i> Quick Dictionary</h3>
+                <button class="close-modal text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="flex gap-2">
+                <input type="text" id="dict-search-input" placeholder="Type a word..." class="flex-1 bg-black/20 border border-[var(--border-color)] rounded-lg p-2 text-sm focus:outline-none focus:border-indigo-500">
+                <button id="btn-search-dict" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold">Search</button>
+            </div>
+            <div id="dict-results" class="max-h-60 overflow-y-auto text-sm space-y-2 p-2 bg-black/20 rounded-lg border border-[var(--border-color)] text-gray-300 min-h-[100px]">
+                <p class="text-xs text-gray-500 italic">Enter a word above to see definitions, synonyms, and meanings.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: AI Mind Map Visualizer -->
+    <div id="modal-mindmap" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-[var(--bg-editor)] border border-[var(--border-color)] rounded-xl w-full max-w-4xl p-5 shadow-2xl space-y-4 flex flex-col h-[85vh]">
+            <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-3 shrink-0">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-network-wired text-cyan-400 text-xl"></i>
+                    <div>
+                        <h3 class="font-semibold text-lg">Story & Mind Map Visualizer</h3>
+                        <p class="text-xs text-gray-400">Interactive structural graph of your plot, themes, characters, and key elements</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button id="btn-export-mindmap" class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-cyan-300 border border-cyan-800/40 rounded-lg text-xs font-semibold flex items-center gap-1.5">
+                        <i class="fa-solid fa-download"></i> Export SVG
+                    </button>
+                    <button id="btn-generate-mindmap" class="px-3.5 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-lg shadow-cyan-900/20">
+                        <i class="fa-solid fa-rotate text-xs"></i> Regenerate
+                    </button>
+                    <button class="close-modal text-gray-400 hover:text-white p-1 ml-2"><i class="fa-solid fa-xmark text-lg"></i></button>
+                </div>
+            </div>
+
+            <!-- Mind Map Canvas Viewport -->
+            <div class="flex-1 relative bg-black/40 rounded-lg border border-[var(--border-color)] overflow-hidden flex items-center justify-center">
+                <svg id="mindmap-svg" class="w-full h-full cursor-grab active:cursor-grabbing select-none" xmlns="http://www.w3.org/2000/svg"></svg>
+                
+                <!-- Loading Overlay -->
+                <div id="mindmap-loading" class="hidden absolute inset-0 bg-black/60 backdrop-blur-xs flex flex-col items-center justify-center space-y-3">
+                    <i class="fa-solid fa-circle-notch fa-spin text-cyan-400 text-3xl"></i>
+                    <p class="text-xs text-cyan-200 font-medium">Extracting concepts & building mind map...</p>
+                </div>
+
+                <!-- Empty State -->
+                <div id="mindmap-empty" class="absolute text-center space-y-2 p-6">
+                    <i class="fa-solid fa-diagram-project text-gray-600 text-4xl mb-2"></i>
+                    <p class="text-sm text-gray-300 font-medium">No Mind Map Generated Yet</p>
+                    <p class="text-xs text-gray-500 max-w-sm">Type some write-up content in the editor and click "Regenerate" to create a visual node map of your story!</p>
+                </div>
+
+                <!-- Mindmap Controls Overlay -->
+                <div class="absolute bottom-3 right-3 flex items-center space-x-1.5 bg-gray-900/80 border border-gray-700/60 rounded-lg p-1 text-xs backdrop-blur">
+                    <button id="btn-zoom-in-mm" class="p-1.5 text-gray-300 hover:text-white hover:bg-gray-700 rounded" title="Zoom In"><i class="fa-solid fa-plus"></i></button>
+                    <button id="btn-zoom-out-mm" class="p-1.5 text-gray-300 hover:text-white hover:bg-gray-700 rounded" title="Zoom Out"><i class="fa-solid fa-minus"></i></button>
+                    <button id="btn-zoom-reset-mm" class="p-1.5 text-gray-300 hover:text-white hover:bg-gray-700 rounded" title="Reset View"><i class="fa-solid fa-arrows-to-dot"></i></button>
+                </div>
+            </div>
+
+            <!-- Selected Node Info Drawer -->
+            <div id="mm-node-info" class="shrink-0 bg-black/20 border border-[var(--border-color)] rounded-lg p-2.5 text-xs flex items-center justify-between">
+                <div class="flex items-center space-x-2 overflow-hidden">
+                    <span id="mm-node-type-badge" class="bg-cyan-950 text-cyan-300 border border-cyan-800/60 px-2 py-0.5 rounded font-bold uppercase text-[10px]">Root</span>
+                    <strong id="mm-node-title" class="text-[var(--text-main)] truncate">Click any node in the map to view detailed details</strong>
+                </div>
+                <p id="mm-node-desc" class="text-gray-400 truncate max-w-md hidden sm:block">Explore connections between characters, scenes, and key themes.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: Settings & Customization -->
+    <div id="modal-settings" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-[var(--bg-editor)] border border-[var(--border-color)] rounded-xl w-full max-w-md p-5 shadow-2xl space-y-5">
+            <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-3">
+                <h3 class="font-semibold text-lg flex items-center gap-2"><i class="fa-solid fa-sliders text-indigo-400"></i> Editor Preferences</h3>
+                <button class="close-modal text-gray-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="space-y-4 text-sm">
+                <!-- Theme Selection -->
+                <div>
+                    <label class="text-xs font-semibold uppercase tracking-wider text-gray-400 block mb-2">Color Theme</label>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" id="theme-selectors">
+                        <button data-theme="theme-sky" class="p-2 rounded border border-gray-400 bg-[#e0f2fe] text-[#0c4a6e] text-xs font-medium text-center hover:border-blue-500">Sky Blue</button>
+                        <button data-theme="theme-blue" class="p-2 rounded border border-blue-600 bg-[#2563eb] text-white text-xs font-medium text-center hover:border-blue-300">Blue</button>
+                        <button data-theme="theme-darkblue" class="p-2 rounded border border-slate-600 bg-[#1e293b] text-white text-xs font-medium text-center hover:border-blue-500">Dark Blue</button>
+                        <button data-theme="theme-black" class="p-2 rounded border border-zinc-700 bg-[#000000] text-white text-xs font-medium text-center hover:border-blue-500">Black</button>
+                    </div>
+                </div>
+
+                <!-- Font Family Selection -->
+                <div>
+                    <label class="text-xs font-semibold uppercase tracking-wider text-gray-400 block mb-2">Typography</label>
+                    <select id="setting-font" class="w-full bg-black/20 border border-[var(--border-color)] rounded-lg p-2 text-xs focus:outline-none focus:border-indigo-500 text-[var(--text-main)]">
+                        <option value="font-serif">Lora (Classic Serif)</option>
+                        <option value="font-classic">Merriweather (Book Serif)</option>
+                        <option value="font-sans">Inter (Clean Modern Sans)</option>
+                        <option value="font-mono">Fira Code (Monospace Typewriter)</option>
+                    </select>
+                </div>
+
+                <!-- Font Size Slider -->
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-xs font-semibold uppercase tracking-wider text-gray-400">Font Size</label>
+                        <span id="font-size-val" class="text-xs text-indigo-400 font-bold">18px</span>
+                    </div>
+                    <input type="range" id="setting-font-size" min="14" max="28" value="18" class="w-full accent-indigo-500">
+                </div>
+
+                <!-- Sprint Duration Config -->
+                <div>
+                    <label class="text-xs font-semibold uppercase tracking-wider text-gray-400 block mb-1">Sprint Timer Duration (Minutes)</label>
+                    <input type="number" id="setting-sprint-minutes" value="25" min="1" max="120" class="w-full bg-black/20 border border-[var(--border-color)] rounded-lg p-2 text-xs focus:outline-none focus:border-indigo-500 text-[var(--text-main)]">
+                </div>
+            </div>
+
+            <div class="flex justify-end pt-2">
+                <button class="close-modal px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast" class="fixed bottom-12 right-6 bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-xl text-sm transform translate-y-10 opacity-0 transition-all duration-300 pointer-events-none z-50 flex items-center gap-2">
+        <i class="fa-solid fa-circle-check"></i>
+        <span id="toast-msg">Action completed</span>
+    </div>
+
+    <!-- Application Logic Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // DOM Elements
+            const editor = document.getElementById('editor');
+            const docTitle = document.getElementById('doc-title');
+            const selectWriteupType = document.getElementById('select-writeup-type');
+            const selectGenre = document.getElementById('select-genre');
+            const selectPov = document.getElementById('select-pov');
+            const saveStatus = document.getElementById('save-status');
+            const topNav = document.getElementById('top-nav');
+            const bottomBar = document.getElementById('bottom-bar');
+            const sidebarScratchpad = document.getElementById('sidebar-scratchpad');
+
+            // Stats
+            const statWords = document.getElementById('stat-words');
+            const statChars = document.getElementById('stat-chars');
+            const statParagraphs = document.getElementById('stat-paragraphs');
+            const statReadtime = document.getElementById('stat-readtime');
+            const inputWordGoal = document.getElementById('input-word-goal');
+            const goalProgressBar = document.getElementById('goal-progress-bar');
+            const goalPercent = document.getElementById('goal-percent');
+            const wpmLive = document.getElementById('wpm-live');
+
+            // Controls
+            const btnFocusMode = document.getElementById('btn-focus-mode');
+            const btnExitFocus = document.getElementById('btn-exit-focus');
+            const btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
+            const btnCloseSidebar = document.getElementById('close-sidebar-btn');
+            const btnToggleSettings = document.getElementById('btn-toggle-settings');
+            const btnExport = document.getElementById('btn-export');
+            const scratchpadText = document.getElementById('scratchpad-text');
+
+            // Archive Elements
+            const btnSaveArchive = document.getElementById('btn-save-archive');
+            const btnOpenArchive = document.getElementById('btn-open-archive');
+            const modalArchive = document.getElementById('modal-archive');
+            const archiveList = document.getElementById('archive-list');
+            const archiveSearch = document.getElementById('archive-search');
+            const archiveFilterType = document.getElementById('archive-filter-type');
+            const archiveFilterGenre = document.getElementById('archive-filter-genre');
+            const btnCreateNewDraft = document.getElementById('btn-create-new-draft');
+            const archiveBadge = document.getElementById('archive-badge');
+
+            // Outline & Sidebar Elements
+            const addOutlineBtn = document.getElementById('add-outline-item');
+            const outlineList = document.getElementById('outline-list');
+            const tabNotesBtn = document.getElementById('tab-notes-btn');
+            const tabOutlineBtn = document.getElementById('tab-outline-btn');
+            const panelNotes = document.getElementById('panel-notes');
+            const panelOutline = document.getElementById('panel-outline');
+
+            // Timer Elements
+            const timerDisplay = document.getElementById('timer-display');
+            const timerToggleBtn = document.getElementById('timer-toggle-btn');
+            const timerResetBtn = document.getElementById('timer-reset-btn');
+
+            // Modals
+            const modalSearch = document.getElementById('modal-search');
+            const modalDict = document.getElementById('modal-dict');
+            const modalShakespeare = document.getElementById('modal-shakespeare');
+            const modalMindmap = document.getElementById('modal-mindmap');
+            const modalCheatsheet = document.getElementById('modal-cheatsheet');
+            const modalSettings = document.getElementById('modal-settings');
+            const closeModals = document.querySelectorAll('.close-modal');
+
+            // Tools Buttons
+            const toolSearch = document.getElementById('tool-search');
+            const toolDict = document.getElementById('tool-dict');
+            const toolShakespeare = document.getElementById('tool-shakespeare');
+            const toolMindmap = document.getElementById('tool-mindmap');
+            const toolCheatsheet = document.getElementById('tool-cheatsheet');
+            const toolClear = document.getElementById('tool-clear');
+
+            // State Variables
+            let currentDraftId = localStorage.getItem('ws_current_draft_id') || ('draft_' + Date.now());
+            let isFocusMode = false;
+            let timerInterval = null;
+            let timerSeconds = 25 * 60;
+            let timerRunning = false;
+            let wordCountHistory = [];
+
+            // --- SPRINT TIMER FUNCTIONS ---
+            function updateTimerDisplay() {
+                const mins = Math.floor(timerSeconds / 60);
+                const secs = timerSeconds % 60;
+                if (timerDisplay) {
+                    timerDisplay.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                }
+            }
+
+            function startTimer() {
+                if (timerRunning) return;
+                timerRunning = true;
+                if (timerToggleBtn) timerToggleBtn.textContent = 'Pause';
+                timerInterval = setInterval(() => {
+                    if (timerSeconds > 0) {
+                        timerSeconds--;
+                        updateTimerDisplay();
+                    } else {
+                        stopTimer();
+                        showToast('Writing sprint finished!');
+                    }
+                }, 1000);
+            }
+
+            function stopTimer() {
+                timerRunning = false;
+                if (timerToggleBtn) timerToggleBtn.textContent = 'Start';
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                }
+            }
+
+            function resetTimer() {
+                stopTimer();
+                const sprintMin = settingSprintMinutes ? parseInt(settingSprintMinutes.value) || 25 : 25;
+                timerSeconds = sprintMin * 60;
+                updateTimerDisplay();
+            }
+
+            if (timerToggleBtn) {
+                timerToggleBtn.addEventListener('click', () => {
+                    if (timerRunning) {
+                        stopTimer();
+                    } else {
+                        startTimer();
+                    }
+                });
+            }
+
+            if (timerResetBtn) {
+                timerResetBtn.addEventListener('click', resetTimer);
+            }
+
+            // --- 1. ARCHIVE & DRAFTS MANAGEMENT SYSTEM ---
+            function getArchives() {
+                const data = localStorage.getItem('ws_archives');
+                return data ? JSON.parse(data) : {};
+            }
+
+            function saveArchives(archives) {
+                localStorage.setItem('ws_archives', JSON.stringify(archives));
+                updateArchiveBadge();
+            }
+
+            function updateArchiveBadge() {
+                const archives = getArchives();
+                const count = Object.keys(archives).length;
+                if (count > 0) {
+                    archiveBadge.textContent = count;
+                    archiveBadge.classList.remove('hidden');
+                } else {
+                    archiveBadge.classList.add('hidden');
+                }
+            }
+
+            function saveCurrentToArchive(silent = false) {
+                const archives = getArchives();
+                const text = editor.value;
+                const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+                const goalVal = inputWordGoal ? inputWordGoal.value : 1000;
+
+                archives[currentDraftId] = {
+                    id: currentDraftId,
+                    title: docTitle.value || 'Untitled Draft',
+                    writeupType: selectWriteupType ? selectWriteupType.value : 'Novel Chapter',
+                    genre: selectGenre ? selectGenre.value : 'General Fiction',
+                    pov: selectPov ? selectPov.value : '1st Person',
+                    content: text,
+                    scratchpad: scratchpadText ? scratchpadText.value : '',
+                    wordGoal: goalVal,
+                    words: words,
+                    updatedAt: new Date().toISOString()
+                };
+
+                saveArchives(archives);
+                if (!silent) {
+                    showToast('Saved to Archive!');
+                }
+            }
+
+            function renderArchiveList() {
+                const archives = getArchives();
+                const query = archiveSearch.value.toLowerCase().trim();
+                const selectedType = archiveFilterType ? archiveFilterType.value : 'ALL';
+                const selectedGenre = archiveFilterGenre.value;
+
+                archiveList.innerHTML = '';
+
+                const draftKeys = Object.keys(archives).sort((a, b) => new Date(archives[b].updatedAt) - new Date(archives[a].updatedAt));
+
+                let visibleCount = 0;
+
+                draftKeys.forEach(id => {
+                    const item = archives[id];
+                    const matchesSearch = item.title.toLowerCase().includes(query) || item.content.toLowerCase().includes(query);
+                    const matchesType = selectedType === 'ALL' || item.writeupType === selectedType;
+                    const matchesGenre = selectedGenre === 'ALL' || item.genre === selectedGenre;
+
+                    if (matchesSearch && matchesType && matchesGenre) {
+                        visibleCount++;
+                        const isCurrent = id === currentDraftId;
+                        const dateStr = new Date(item.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+                        const card = document.createElement('div');
+                        card.className = `p-3.5 rounded-lg border transition flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
+                            isCurrent 
+                            ? 'bg-indigo-900/30 border-indigo-500/70' 
+                            : 'bg-black/20 border-[var(--border-color)] hover:border-gray-500'
+                        }`;
+
+                        card.innerHTML = `
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <h4 class="font-semibold text-sm truncate text-[var(--text-main)]">${item.title}</h4>
+                                    ${isCurrent ? '<span class="text-[10px] bg-indigo-600 text-white font-bold px-1.5 py-0.5 rounded">Active</span>' : ''}
+                                </div>
+                                <div class="flex flex-wrap items-center gap-2 text-xs text-gray-400">
+                                    <span class="bg-gray-700/50 px-2 py-0.5 rounded text-indigo-300 font-medium">${item.writeupType || 'Write-Up'}</span>
+                                    <span class="bg-gray-700/50 px-2 py-0.5 rounded text-amber-300 font-medium">${item.genre || 'General'}</span>
+                                    <span class="bg-gray-700/50 px-2 py-0.5 rounded text-emerald-300 font-medium">${item.pov || '1st Person'}</span>
+                                    <span>• ${item.words || 0} words</span>
+                                    <span>• ${dateStr}</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2 shrink-0 self-end sm:self-center">
+                                <button data-id="${id}" class="btn-load-draft px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-semibold flex items-center gap-1">
+                                    <i class="fa-solid fa-folder-open"></i> Open
+                                </button>
+                                <button data-id="${id}" class="btn-delete-draft text-red-400 hover:text-red-300 p-1.5 text-xs hover:bg-red-900/20 rounded">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
+                        `;
+
+                        archiveList.appendChild(card);
+                    }
+                });
+
+                if (visibleCount === 0) {
+                    archiveList.innerHTML = `<div class="text-center py-8 text-gray-500 text-xs">No archived write-ups found.</div>`;
+                }
+
+                // Add card button event handlers
+                document.querySelectorAll('.btn-load-draft').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const id = e.currentTarget.getAttribute('data-id');
+                        loadDraftFromArchive(id);
+                        modalArchive.classList.add('hidden');
+                    });
+                });
+
+                document.querySelectorAll('.btn-delete-draft').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const id = e.currentTarget.getAttribute('data-id');
+                        deleteDraftFromArchive(id);
+                    });
+                });
+            }
+
+            function loadDraftFromArchive(id) {
+                // Save current work first
+                saveCurrentToArchive(true);
+
+                const archives = getArchives();
+                const target = archives[id];
+                if (!target) return;
+
+                currentDraftId = id;
+                localStorage.setItem('ws_current_draft_id', id);
+
+                docTitle.value = target.title || 'Untitled Draft';
+                if (selectWriteupType) selectWriteupType.value = target.writeupType || 'Novel Chapter';
+                if (selectGenre) selectGenre.value = target.genre || 'General Fiction';
+                if (selectPov) selectPov.value = target.pov || '1st Person';
+                editor.value = target.content || '';
+                if (scratchpadText) scratchpadText.value = target.scratchpad || '';
+                if (target.wordGoal && inputWordGoal) inputWordGoal.value = target.wordGoal;
+
+                updateMetrics();
+                triggerAutoSave();
+                showToast(`Loaded "${target.title}"`);
+            }
+
+            function deleteDraftFromArchive(id) {
+                const archives = getArchives();
+                if (!archives[id]) return;
+
+                const draftTitle = archives[id].title || 'Draft';
+                delete archives[id];
+                saveArchives(archives);
+
+                // If deleted draft was the currently active draft, reset to a new draft
+                if (id === currentDraftId) {
+                    createNewDraft();
+                } else {
+                    renderArchiveList();
+                }
+                showToast(`Deleted "${draftTitle}"`);
+            }
+
+            function createNewDraft() {
+                // Save current first
+                saveCurrentToArchive(true);
+
+                currentDraftId = 'draft_' + Date.now();
+                localStorage.setItem('ws_current_draft_id', currentDraftId);
+
+                docTitle.value = 'New Draft';
+                selectWriteupType.value = 'Novel Chapter';
+                selectGenre.value = 'General Fiction';
+                if (selectPov) selectPov.value = '1st Person';
+                editor.value = '';
+                scratchpadText.value = '';
+
+                updateMetrics();
+                saveCurrentToArchive(true);
+                modalArchive.classList.add('hidden');
+                showToast('Created new blank draft');
+            }
+
+            btnSaveArchive.addEventListener('click', () => saveCurrentToArchive(false));
+            btnOpenArchive.addEventListener('click', () => {
+                renderArchiveList();
+                openModal(modalArchive);
+            });
+            archiveSearch.addEventListener('input', renderArchiveList);
+            if (archiveFilterType) archiveFilterType.addEventListener('change', renderArchiveList);
+            archiveFilterGenre.addEventListener('change', renderArchiveList);
+            btnCreateNewDraft.addEventListener('click', createNewDraft);
+
+            // --- 2. LOCAL STORAGE & PERSISTENCE ---
+            function loadSavedState() {
+                const savedTitle = localStorage.getItem('ws_doc_title');
+                const savedType = localStorage.getItem('ws_writeup_type');
+                const savedGenre = localStorage.getItem('ws_genre');
+                const savedPov = localStorage.getItem('ws_pov');
+                const savedContent = localStorage.getItem('ws_doc_content');
+                const savedScratchpad = localStorage.getItem('ws_scratchpad');
+                const savedGoal = localStorage.getItem('ws_word_goal');
+                const savedTheme = localStorage.getItem('ws_theme') || 'theme-darkblue';
+                const savedFont = localStorage.getItem('ws_font') || 'font-serif';
+                const savedFontSize = localStorage.getItem('ws_font_size') || '18';
+                const savedSprint = localStorage.getItem('ws_sprint_min') || '25';
+
+                if (savedTitle) docTitle.value = savedTitle;
+                if (savedType && selectWriteupType) selectWriteupType.value = savedType;
+                if (savedGenre && selectGenre) selectGenre.value = savedGenre;
+                if (savedPov && selectPov) selectPov.value = savedPov;
+                if (savedContent !== null) editor.value = savedContent;
+                if (savedScratchpad !== null) scratchpadText.value = savedScratchpad;
+                if (savedGoal) inputWordGoal.value = savedGoal;
+
+                // Apply Preferences
+                document.body.className = `${savedTheme} h-full font-sans bg-[var(--bg-main)] text-[var(--text-main)] transition-colors duration-300 flex flex-col overflow-hidden`;
+                editor.className = editor.className.replace(/font-\w+/, savedFont);
+                editor.style.fontSize = `${savedFontSize}px`;
+                document.getElementById('font-size-val').textContent = `${savedFontSize}px`;
+                document.getElementById('setting-font-size').value = savedFontSize;
+                document.getElementById('setting-font').value = savedFont;
+                document.getElementById('setting-sprint-minutes').value = savedSprint;
+
+                timerSeconds = parseInt(savedSprint) * 60;
+                updateTimerDisplay();
+                updateMetrics();
+                updateArchiveBadge();
+            }
+
+            function saveState() {
+                localStorage.setItem('ws_doc_title', docTitle.value);
+                if (selectWriteupType) localStorage.setItem('ws_writeup_type', selectWriteupType.value);
+                if (selectGenre) localStorage.setItem('ws_genre', selectGenre.value);
+                if (selectPov) localStorage.setItem('ws_pov', selectPov.value);
+                localStorage.setItem('ws_doc_content', editor.value);
+                if (scratchpadText) localStorage.setItem('ws_scratchpad', scratchpadText.value);
+                if (inputWordGoal) localStorage.setItem('ws_word_goal', inputWordGoal.value);
+
+                // Sync current state with Archive object silently
+                saveCurrentToArchive(true);
+
+                saveStatus.innerHTML = `<i class="fa-solid fa-cloud-arrow-up text-green-400"></i> Saved`;
+            }
+
+            let saveTimeout;
+            function triggerAutoSave() {
+                saveStatus.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-indigo-400"></i> Saving...`;
+                clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(saveState, 800);
+            }
+
+            // --- 3. LIVE METRICS & ANALYTICS ---
+            function updateMetrics() {
+                const text = editor.value;
+                const trimmed = text.trim();
+
+                // Word count
+                const words = trimmed ? trimmed.split(/\s+/).length : 0;
+                const chars = text.length;
+                const paragraphs = trimmed ? trimmed.split(/\n+/).filter(p => p.trim().length > 0).length : 0;
+                const readTime = Math.ceil(words / 200); // Average 200 wpm reading speed
+
+                if (statWords) statWords.textContent = words.toLocaleString();
+                if (statChars) statChars.textContent = chars.toLocaleString();
+                if (statParagraphs) statParagraphs.textContent = paragraphs.toLocaleString();
+                if (statReadtime) statReadtime.textContent = `${readTime} min`;
+
+                // Calculate Progress Goal
+                const goal = (inputWordGoal && parseInt(inputWordGoal.value)) || 1000;
+                const percentage = Math.min(100, Math.round((words / goal) * 100));
+                if (goalProgressBar) goalProgressBar.style.width = `${percentage}%`;
+                if (goalPercent) goalPercent.textContent = `${percentage}%`;
+
+                // Calculate WPM pace over time
+                const now = Date.now();
+                wordCountHistory.push({ time: now, count: words });
+                // Filter history for past 60 seconds
+                wordCountHistory = wordCountHistory.filter(entry => now - entry.time <= 60000);
+
+                if (wordCountHistory.length > 1) {
+                    const first = wordCountHistory[0];
+                    const last = wordCountHistory[wordCountHistory.length - 1];
+                    const deltaWords = Math.max(0, last.count - first.count);
+                    const deltaTimeMin = (last.time - first.time) / 60000;
+                    const wpm = deltaTimeMin > 0 ? Math.round(deltaWords / deltaTimeMin) : 0;
+                    if (wpmLive) wpmLive.textContent = wpm;
+                } else {
+                    if (wpmLive) wpmLive.textContent = 0;
+                }
+            }
+
+            // --- 4. EDITOR EVENTS ---
+            editor.addEventListener('input', () => {
+                updateMetrics();
+                triggerAutoSave();
+            });
+
+            docTitle.addEventListener('input', triggerAutoSave);
+            if (selectWriteupType) selectWriteupType.addEventListener('change', triggerAutoSave);
+            if (selectGenre) selectGenre.addEventListener('change', triggerAutoSave);
+            
+            // --- POV SELECTION & SELECTION TRANSFORMATION ---
+            const modalPovConfirm = document.getElementById('modal-pov-confirm');
+            const povTargetName = document.getElementById('pov-target-name');
+            const btnConfirmPovTransform = document.getElementById('btn-confirm-pov-transform');
+            const povSpinner = document.getElementById('pov-spinner');
+            let pendingPovTarget = "";
+
+            if (selectPov) {
+                selectPov.addEventListener('change', (e) => {
+                    const selectedPov = e.target.value;
+                    const start = editor.selectionStart;
+                    const end = editor.selectionEnd;
+
+                    // Check if user has text selected in the editor
+                    if (start !== undefined && end !== undefined && start !== end) {
+                        pendingPovTarget = selectedPov;
+                        if (povTargetName) povTargetName.textContent = selectedPov;
+                        openModal(modalPovConfirm);
+                    } else {
+                        triggerAutoSave();
+                        showToast(`Document POV set to ${selectedPov}`);
+                    }
+                });
+            }
+
+            if (btnConfirmPovTransform) {
+                btnConfirmPovTransform.addEventListener('click', async () => {
+                    const start = editor.selectionStart;
+                    const end = editor.selectionEnd;
+                    const selectedText = editor.value.substring(start, end);
+                    if (!selectedText) {
+                        closeModal(modalPovConfirm);
+                        return;
+                    }
+
+                    if (povSpinner) povSpinner.classList.remove('hidden');
+                    btnConfirmPovTransform.disabled = true;
+
+                    const systemPrompt = `Rewrite the provided writing passage into ${pendingPovTarget}. Maintain the exact narrative plot, tone, and formatting, but adapt all pronouns and verb agreement to match ${pendingPovTarget} perspective (e.g., 1st person uses I/we, 2nd person uses you, 3rd person uses he/she/they/it). Output ONLY the rewritten text without commentary.`;
+                    const apiKey = "";
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+                    try {
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                contents: [{ parts: [{ text: selectedText }] }],
+                                systemInstruction: { parts: [{ text: systemPrompt }] }
+                            })
+                        });
+
+                        const result = await response.json();
+                        const transformed = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                        if (transformed) {
+                            editor.value = editor.value.substring(0, start) + transformed.trim() + editor.value.substring(end);
+                            updateMetrics();
+                            triggerAutoSave();
+                            showToast(`Passage transformed to ${pendingPovTarget}!`);
+                        } else {
+                            throw new Error("Transformation failed");
+                        }
+                    } catch (err) {
+                        console.error("POV Transformation Error:", err);
+                        // Fallback transformation
+                        let fallback = selectedText;
+                        if (pendingPovTarget.includes('1st')) {
+                            fallback = fallback.replace(/\b(he|she|they)\b/gi, 'I').replace(/\b(his|her|their)\b/gi, 'my');
+                        } else if (pendingPovTarget.includes('2nd')) {
+                            fallback = fallback.replace(/\b(he|she|they|I)\b/gi, 'you').replace(/\b(his|her|their|my)\b/gi, 'your');
+                        } else {
+                            fallback = fallback.replace(/\b(I|you)\b/gi, 'he').replace(/\b(my|your)\b/gi, 'his');
+                        }
+                        editor.value = editor.value.substring(0, start) + fallback + editor.value.substring(end);
+                        updateMetrics();
+                        triggerAutoSave();
+                        showToast(`Passage adapted to ${pendingPovTarget}`);
+                    } finally {
+                        if (povSpinner) povSpinner.classList.add('hidden');
+                        btnConfirmPovTransform.disabled = false;
+                        closeModal(modalPovConfirm);
+                    }
+                });
+            }
+
+            if (scratchpadText) scratchpadText.addEventListener('input', triggerAutoSave);
+            if (inputWordGoal) {
+                inputWordGoal.addEventListener('input', () => {
+                    updateMetrics();
+                    triggerAutoSave();
+                });
+            }
+
+            // --- 5. SIDEBAR & OUTLINE HANDLERS ---
+            if (btnToggleSidebar) {
+                btnToggleSidebar.addEventListener('click', () => {
+                    sidebarScratchpad.classList.toggle('hidden');
+                    sidebarScratchpad.classList.toggle('md:flex');
+                });
+            }
+            if (btnCloseSidebar) {
+                btnCloseSidebar.addEventListener('click', () => {
+                    sidebarScratchpad.classList.add('hidden');
+                    sidebarScratchpad.classList.remove('md:flex');
+                });
+            }
+
+            if (tabNotesBtn && tabOutlineBtn) {
+                tabNotesBtn.addEventListener('click', () => {
+                    tabNotesBtn.className = 'px-3 py-1 text-xs font-semibold rounded-md bg-indigo-600 text-white';
+                    tabOutlineBtn.className = 'px-3 py-1 text-xs font-semibold rounded-md text-gray-400 hover:text-white';
+                    panelNotes.classList.remove('hidden');
+                    panelOutline.classList.add('hidden');
+                });
+
+                tabOutlineBtn.addEventListener('click', () => {
+                    tabOutlineBtn.className = 'px-3 py-1 text-xs font-semibold rounded-md bg-indigo-600 text-white';
+                    tabNotesBtn.className = 'px-3 py-1 text-xs font-semibold rounded-md text-gray-400 hover:text-white';
+                    panelOutline.classList.remove('hidden');
+                    panelNotes.classList.add('hidden');
+                });
+            }
+
+            function addOutlineItem(titleText = 'New Scene / Act') {
+                if (!outlineList) return;
+                const div = document.createElement('div');
+                div.className = 'flex items-center space-x-2 bg-black/20 p-2 rounded border border-[var(--border-color)] text-xs';
+                div.innerHTML = `
+                    <i class="fa-solid fa-grip-vertical text-gray-500 cursor-grab"></i>
+                    <input type="text" value="${titleText}" class="bg-transparent flex-1 focus:outline-none text-[var(--text-main)] font-medium">
+                    <button class="text-red-400 hover:text-red-300 btn-remove-item"><i class="fa-solid fa-trash-can"></i></button>
+                `;
+                div.querySelector('.btn-remove-item').addEventListener('click', () => div.remove());
+                outlineList.appendChild(div);
+            }
+
+            if (addOutlineBtn) {
+                addOutlineBtn.addEventListener('click', () => addOutlineItem());
+            }
+
+            // --- 8. MODALS CONTROL ---
+            function openModal(modal) {
+                if (modal) {
+                    modal.classList.remove('hidden');
+                }
+            }
+
+            function closeModal(modal) {
+                if (modal) {
+                    modal.classList.add('hidden');
+                }
+            }
+
+            closeModals.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    btn.closest('.fixed').classList.add('hidden');
+                });
+            });
+
+            // Toolbar Trigger Modals
+            if (toolSearch) toolSearch.addEventListener('click', () => openModal(modalSearch));
+            if (toolDict) toolDict.addEventListener('click', () => openModal(modalDict));
+            if (toolShakespeare) {
+                toolShakespeare.addEventListener('click', () => {
+                    renderBardDictionary();
+                    openModal(modalShakespeare);
+                });
+            }
+            if (toolMindmap) {
+                toolMindmap.addEventListener('click', () => {
+                    openModal(modalMindmap);
+                    if (!currentMindmapData) generateMindMap();
+                });
+            }
+            if (toolCheatsheet) toolCheatsheet.addEventListener('click', () => openModal(modalCheatsheet));
+            if (btnToggleSettings) btnToggleSettings.addEventListener('click', () => openModal(modalSettings));
+
+            // --- 13. MIND MAP GENERATOR LOGIC ---
+            const svgMM = document.getElementById('mindmap-svg');
+            const mmLoading = document.getElementById('mindmap-loading');
+            const mmEmpty = document.getElementById('mindmap-empty');
+            const btnGenerateMM = document.getElementById('btn-generate-mindmap');
+            const btnExportMM = document.getElementById('btn-export-mindmap');
+            const mmNodeTypeBadge = document.getElementById('mm-node-type-badge');
+            const mmNodeTitle = document.getElementById('mm-node-title');
+            const mmNodeDesc = document.getElementById('mm-node-desc');
+
+            let currentMindmapData = null;
+            let mmZoom = 1;
+            let mmPanX = 0;
+            let mmPanY = 0;
+            let isMMDragging = false;
+            let mmDragStart = { x: 0, y: 0 };
+
+            async function generateMindMap() {
+                const text = editor.value.trim();
+                const title = docTitle.value.trim() || "My Write-up";
+
+                if (!text) {
+                    if (mmEmpty) mmEmpty.classList.remove('hidden');
+                    if (svgMM) svgMM.innerHTML = '';
+                    currentMindmapData = null;
+                    return;
+                }
+
+                if (mmLoading) mmLoading.classList.remove('hidden');
+                if (mmEmpty) mmEmpty.classList.add('hidden');
+
+                const systemPrompt = `Analyze the given writing text and extract its high-level structural mind map as JSON.
+Format required:
+{
+  "title": "${title}",
+  "type": "Central Concept",
+  "children": [
+    {
+      "title": "Category Name (e.g. Characters / Plot Points / Themes / Setting)",
+      "type": "Category",
+      "description": "Brief description",
+      "children": [
+        { "title": "Sub-concept", "type": "Element", "description": "Details about this element" }
+      ]
+    }
+  ]
+}
+Return strictly valid JSON only. Keep max 4 main categories with 2-4 children each.`;
+
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: text.slice(0, 4000) }] }],
+                            generationConfig: { responseMimeType: "application/json" },
+                            systemInstruction: { parts: [{ text: systemPrompt }] }
+                        })
+                    });
+
+                    const result = await response.json();
+                    const rawJson = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (rawJson) {
+                        currentMindmapData = JSON.parse(rawJson);
+                        renderMindMapSVG(currentMindmapData);
+                    } else {
+                        throw new Error("Invalid output");
+                    }
+                } catch (err) {
+                    console.error("Mindmap generation fallback:", err);
+                    // Fallback structured analysis
+                    currentMindmapData = generateFallbackMindmapData(title, text);
+                    renderMindMapSVG(currentMindmapData);
+                } finally {
+                    if (mmLoading) mmLoading.classList.add('hidden');
+                }
+            }
+
+            function generateFallbackMindmapData(title, text) {
+                const words = text.trim().split(/\s+/).length;
+                return {
+                    title: title,
+                    type: "Central Concept",
+                    children: [
+                        {
+                            title: "Overview",
+                            type: "Stats",
+                            description: `${words} words written`,
+                            children: [
+                                { title: "Word Count", type: "Metric", description: `${words} words` },
+                                { title: "Genre", type: "Tag", description: selectGenre ? selectGenre.value : 'Fiction' }
+                            ]
+                        },
+                        {
+                            title: "Core Themes",
+                            type: "Theme",
+                            description: "Primary story elements",
+                            children: [
+                                { title: "Protagonist Journey", type: "Plot", description: "Main character progression" },
+                                { title: "Central Conflict", type: "Plot", description: "Driving tension in draft" }
+                            ]
+                        }
+                    ]
+                };
+            }
+
+            function renderMindMapSVG(data) {
+                if (!svgMM) return;
+                svgMM.innerHTML = '';
+                mmZoom = 1;
+                mmPanX = 0;
+                mmPanY = 0;
+
+                const width = svgMM.clientWidth || 800;
+                const height = svgMM.clientHeight || 500;
+                const centerX = width / 2;
+                const centerY = height / 2;
+
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                g.id = 'mm-canvas-group';
+                svgMM.appendChild(g);
+
+                // Compute positions for radial map layout
+                const nodes = [];
+                const links = [];
+
+                // Root Node
+                const rootNode = { id: 0, x: centerX, y: centerY, data: data, level: 0 };
+                nodes.push(rootNode);
+
+                if (data.children && data.children.length > 0) {
+                    const mainAngleStep = (2 * Math.PI) / data.children.length;
+                    const r1 = 150;
+
+                    data.children.forEach((child, i) => {
+                        const angle = i * mainAngleStep - Math.PI / 2;
+                        const cX = centerX + r1 * Math.cos(angle);
+                        const cY = centerY + r1 * Math.sin(angle);
+                        const childNode = { id: nodes.length, x: cX, y: cY, data: child, level: 1, angle: angle };
+                        nodes.push(childNode);
+                        links.push({ source: rootNode, target: childNode });
+
+                        if (child.children && child.children.length > 0) {
+                            const subStep = 0.5;
+                            const r2 = 110;
+                            const startAngle = angle - ((child.children.length - 1) * subStep) / 2;
+
+                            child.children.forEach((subChild, j) => {
+                                const subAngle = startAngle + j * subStep;
+                                const subX = cX + r2 * Math.cos(subAngle);
+                                const subY = cY + r2 * Math.sin(subAngle);
+                                const subNode = { id: nodes.length, x: subX, y: subY, data: subChild, level: 2 };
+                                nodes.push(subNode);
+                                links.push({ source: childNode, target: subNode });
+                            });
+                        }
+                    });
+                }
+
+                // Render Connection Lines
+                links.forEach(link => {
+                    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    const d = `M ${link.source.x} ${link.source.y} C ${(link.source.x + link.target.x)/2} ${link.source.y}, ${(link.source.x + link.target.x)/2} ${link.target.y}, ${link.target.x} ${link.target.y}`;
+                    path.setAttribute('d', d);
+                    path.setAttribute('stroke', link.target.level === 1 ? '#06b6d4' : '#334155');
+                    path.setAttribute('stroke-width', link.target.level === 1 ? '2.5' : '1.5');
+                    path.setAttribute('fill', 'none');
+                    path.setAttribute('opacity', '0.7');
+                    g.appendChild(path);
+                });
+
+                // Render Node Elements
+                nodes.forEach(node => {
+                    const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                    group.setAttribute('transform', `translate(${node.x}, ${node.y})`);
+                    group.setAttribute('class', 'cursor-pointer group');
+
+                    let circleR = 26;
+                    let fillBg = '#0e7490';
+                    let strokeColor = '#22d3ee';
+
+                    if (node.level === 0) {
+                        circleR = 34;
+                        fillBg = '#4f46e5';
+                        strokeColor = '#818cf8';
+                    } else if (node.level === 2) {
+                        circleR = 18;
+                        fillBg = '#1e293b';
+                        strokeColor = '#64748b';
+                    }
+
+                    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    circle.setAttribute('r', circleR);
+                    circle.setAttribute('fill', fillBg);
+                    circle.setAttribute('stroke', strokeColor);
+                    circle.setAttribute('stroke-width', '2');
+                    group.appendChild(circle);
+
+                    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    text.setAttribute('text-anchor', 'middle');
+                    text.setAttribute('dy', node.level === 2 ? '28' : '40');
+                    text.setAttribute('fill', '#f8fafc');
+                    text.setAttribute('font-size', node.level === 0 ? '13' : '11');
+                    text.setAttribute('font-weight', node.level === 0 ? 'bold' : '500');
+                    text.textContent = node.data.title;
+                    group.appendChild(text);
+
+                    // Click event to display details in drawer
+                    group.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (mmNodeTypeBadge) mmNodeTypeBadge.textContent = node.data.type || 'Node';
+                        if (mmNodeTitle) mmNodeTitle.textContent = node.data.title;
+                        if (mmNodeDesc) {
+                            mmNodeDesc.textContent = node.data.description || "No further details available for this node.";
+                            mmNodeDesc.classList.remove('hidden');
+                        }
+                    });
+
+                    g.appendChild(group);
+                });
+
+                updateMMTransform();
+            }
+
+            function updateMMTransform() {
+                const group = document.getElementById('mm-canvas-group');
+                if (group) {
+                    group.setAttribute('transform', `translate(${mmPanX}, ${mmPanY}) scale(${mmZoom})`);
+                }
+            }
+
+            if (btnGenerateMM) btnGenerateMM.addEventListener('click', generateMindMap);
+            if (btnExportMM) {
+                btnExportMM.addEventListener('click', () => {
+                    if (!svgMM) return;
+                    const svgData = new XMLSerializer().serializeToString(svgMM);
+                    const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${(docTitle.value || 'story').toLowerCase().replace(/[^a-z0-9]/g, '_')}_mindmap.svg`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    showToast('Mind Map exported as SVG');
+                });
+            }
+
+            // Pan & Zoom Controls for Mind Map
+            if (svgMM) {
+                svgMM.addEventListener('mousedown', (e) => {
+                    isMMDragging = true;
+                    mmDragStart = { x: e.clientX - mmPanX, y: e.clientY - mmPanY };
+                });
+                window.addEventListener('mousemove', (e) => {
+                    if (!isMMDragging) return;
+                    mmPanX = e.clientX - mmDragStart.x;
+                    mmPanY = e.clientY - mmDragStart.y;
+                    updateMMTransform();
+                });
+                window.addEventListener('mouseup', () => { isMMDragging = false; });
+                svgMM.addEventListener('wheel', (e) => {
+                    e.preventDefault();
+                    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+                    mmZoom = Math.min(Math.max(0.4, mmZoom + delta), 2.5);
+                    updateMMTransform();
+                });
+            }
+
+            const btnZoomInMM = document.getElementById('btn-zoom-in-mm');
+            const btnZoomOutMM = document.getElementById('btn-zoom-out-mm');
+            const btnZoomResetMM = document.getElementById('btn-zoom-reset-mm');
+
+            if (btnZoomInMM) {
+                btnZoomInMM.addEventListener('click', () => {
+                    mmZoom = Math.min(2.5, mmZoom + 0.2);
+                    updateMMTransform();
+                });
+            }
+            if (btnZoomOutMM) {
+                btnZoomOutMM.addEventListener('click', () => {
+                    mmZoom = Math.max(0.4, mmZoom - 0.2);
+                    updateMMTransform();
+                });
+            }
+            if (btnZoomResetMM) {
+                btnZoomResetMM.addEventListener('click', () => {
+                    mmZoom = 1;
+                    mmPanX = 0;
+                    mmPanY = 0;
+                    updateMMTransform();
+                });
+            }
+
+            toolDict.addEventListener('click', () => openModal(modalDict));
+            if (toolShakespeare) {
+                toolShakespeare.addEventListener('click', () => {
+                    renderBardDictionary();
+                    openModal(modalShakespeare);
+                });
+            }
+            if (toolMindmap) {
+                toolMindmap.addEventListener('click', () => {
+                    openModal(modalMindmap);
+                    if (!currentMindmapData) generateMindMap();
+                });
+            }
+            if (toolCheatsheet) toolCheatsheet.addEventListener('click', () => openModal(modalCheatsheet));
+            if (btnToggleSettings) btnToggleSettings.addEventListener('click', () => openModal(modalSettings));
+
+            // --- SHAKESPEAREAN DICTIONARY & BARD GENERATOR LOGIC ---
+            const shakespeareDictionary = [
+                { modern: "You / Your", bard: "Thou / Thee / Thy", category: "Pronouns", note: "Thou is subject, Thee is object, Thy is possessive." },
+                { modern: "Yourselves / You all", bard: "Ye", category: "Pronouns", note: "Plural addressing of a group." },
+                { modern: "Why", bard: "Wherefore", category: "Verbs & Words", note: "Means 'why' or 'for what reason' (not where)." },
+                { modern: "Where", bard: "Whither", category: "Verbs & Words", note: "To what place (e.g., Whither goest thou?)." },
+                { modern: "From where", bard: "Whence", category: "Verbs & Words", note: "From what origin or location." },
+                { modern: "Listen / Hear", bard: "Hark / Hearken", category: "Verbs & Words", note: "e.g., Hark! What light through yonder window breaks?" },
+                { modern: "Friend / Relative", bard: "Coz / Gentle", category: "Verbs & Words", note: "Term of endearment or cousin." },
+                { modern: "Quickly / Immediately", bard: "Post-haste / Anon", category: "Verbs & Words", note: "Anon means 'right away' or 'soon'." },
+                { modern: "Know", bard: "Wot / Ken", category: "Verbs & Words", note: "e.g., I wot not what thou meanest." },
+                { modern: "Does / Do", bard: "Doth / Dost", category: "Verbs & Words", note: "He doth, thou dost." },
+                { modern: "Has / Have", bard: "Hath / Hast", category: "Verbs & Words", note: "She hath, thou hast." },
+                { modern: "Are", bard: "Art", category: "Verbs & Words", note: "Thou art a noble soul." },
+                { modern: "Go / Depart", bard: "Hie", category: "Verbs & Words", note: "e.g., Hie thee hence!" },
+                { modern: "Maybe / Perhaps", bard: "Perchance / Mayhap", category: "Verbs & Words", note: "By chance or fortune." },
+                { modern: "Indeed / Truly", bard: "Verily / Forsooth", category: "Verbs & Words", note: "Used for emphasis or truth." },
+                { modern: "Oh no! / Alas", bard: "Alack / Fie", category: "Exclamations", note: "Expression of sorrow or disgust (e.g., Fie upon it!)." },
+                { modern: "Look / Behold", bard: "Lo", category: "Exclamations", note: "e.g., Lo and behold." },
+                { modern: "Good heavens! / By God", bard: "Zounds / Marry", category: "Exclamations", note: "'Marry' comes from 'By Mary'." },
+                { modern: "Stop / Wait", bard: "Soft!", category: "Exclamations", note: "e.g., Soft! What noise is this?" },
+                { modern: "Before", bard: "Ere", category: "Connectors", note: "e.g., Ere the sun goes down." },
+                { modern: "If", bard: "An / If that", category: "Connectors", note: "e.g., An it please your grace." },
+                { modern: "Over there", bard: "Yonder", category: "Connectors", note: "In that direction or place." },
+                { modern: "Away from here", bard: "Hence", category: "Connectors", note: "e.g., Get thee hence." },
+                { modern: "Therefore / Thus", bard: "Ergo", category: "Connectors", note: "Consequence or logical continuation." }
+            ];
+
+            // Modal Tabs & Generator Elements
+            const tabBardGen = document.getElementById('tab-bard-gen');
+            const tabBardDict = document.getElementById('tab-bard-dict');
+            const sectionBardGen = document.getElementById('section-bard-gen');
+            const sectionBardDict = document.getElementById('section-bard-dict');
+
+            const bardInputText = document.getElementById('bard-input-text');
+            const btnGenerateShakespeare = document.getElementById('btn-generate-shakespeare');
+            const bardGenStatus = document.getElementById('bard-gen-status');
+            const bardOutputBox = document.getElementById('bard-output-box');
+            const btnCopyBardOutput = document.getElementById('btn-copy-bard-output');
+            const btnInsertBardOutput = document.getElementById('btn-insert-bard-output');
+            const bardPresetBtns = document.querySelectorAll('.bard-preset-btn');
+
+            let lastGeneratedShakespeareText = "";
+
+            if (tabBardGen && tabBardDict) {
+                tabBardGen.addEventListener('click', () => {
+                    tabBardGen.className = "pb-2 text-xs font-bold text-amber-400 border-b-2 border-amber-400 flex items-center gap-1.5";
+                    tabBardDict.className = "pb-2 text-xs font-semibold text-gray-400 hover:text-gray-200 flex items-center gap-1.5";
+                    sectionBardGen.classList.remove('hidden');
+                    sectionBardDict.classList.add('hidden');
+                });
+
+                tabBardDict.addEventListener('click', () => {
+                    tabBardDict.className = "pb-2 text-xs font-bold text-amber-400 border-b-2 border-amber-400 flex items-center gap-1.5";
+                    tabBardGen.className = "pb-2 text-xs font-semibold text-gray-400 hover:text-gray-200 flex items-center gap-1.5";
+                    sectionBardDict.classList.remove('hidden');
+                    sectionBardGen.classList.add('hidden');
+                    renderBardDictionary();
+                });
+            }
+
+            // Quick preset handlers
+            bardPresetBtns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    if (bardInputText) bardInputText.value = e.currentTarget.getAttribute('data-preset');
+                });
+            });
+
+            // Modern to Shakespearean LLM Generator Function
+            async function generateShakespeareanText() {
+                const inputText = bardInputText ? bardInputText.value.trim() : '';
+                if (!inputText) {
+                    showToast("Please enter some text to transform!");
+                    return;
+                }
+
+                if (bardGenStatus) {
+                    bardGenStatus.classList.remove('hidden');
+                    bardGenStatus.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-amber-400 mr-1"></i> Translating to Shakespearean...`;
+                }
+                if (btnGenerateShakespeare) btnGenerateShakespeare.disabled = true;
+
+                const systemPrompt = "Act as William Shakespeare. Convert the given modern English input into authentic, elegant Shakespearean / Early Modern English prose or verse. Maintain the original meaning but use authentic vocabulary (thou, thee, thy, wherefore, anon, hath, art), sentence structure, and poetic cadence. Output ONLY the converted Shakespearean text without commentary.";
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: inputText }] }],
+                            systemInstruction: { parts: [{ text: systemPrompt }] }
+                        })
+                    });
+
+                    const result = await response.json();
+                    const convertedText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                    if (convertedText) {
+                        lastGeneratedShakespeareText = convertedText.trim();
+                        if (bardOutputBox) {
+                            bardOutputBox.className = "min-h-[90px] p-3 bg-black/30 border border-amber-500/50 rounded-lg text-xs font-serif leading-relaxed text-amber-100 text-left";
+                            bardOutputBox.textContent = lastGeneratedShakespeareText;
+                        }
+                        showToast("Shakespearean translation complete!");
+                    } else {
+                        throw new Error("Invalid response format");
+                    }
+                } catch (err) {
+                    console.error("Generator Error:", err);
+                    const fallbackResult = fallbackShakespeareTransform(inputText);
+                    lastGeneratedShakespeareText = fallbackResult;
+                    if (bardOutputBox) {
+                        bardOutputBox.className = "min-h-[90px] p-3 bg-black/30 border border-amber-500/50 rounded-lg text-xs font-serif leading-relaxed text-amber-100 text-left";
+                        bardOutputBox.textContent = fallbackResult;
+                    }
+                    showToast("Converted to Shakespearean!");
+                } finally {
+                    if (bardGenStatus) bardGenStatus.classList.add('hidden');
+                    if (btnGenerateShakespeare) btnGenerateShakespeare.disabled = false;
+                }
+            }
+
+            function fallbackShakespeareTransform(text) {
+                let res = text
+                    .replace(/\byou are\b/gi, "thou art")
+                    .replace(/\byou have\b/gi, "thou hast")
+                    .replace(/\byou\b/gi, "thee")
+                    .replace(/\byour\b/gi, "thy")
+                    .replace(/\byours\b/gi, "thine")
+                    .replace(/\bwhy\b/gi, "wherefore")
+                    .replace(/\blisten\b/gi, "hark")
+                    .replace(/\bquickly\b/gi, "post-haste")
+                    .replace(/\bfriend\b/gi, "gentle coz")
+                    .replace(/\bdoes\b/gi, "doth")
+                    .replace(/\bhas\b/gi, "hath")
+                    .replace(/\bperhaps\b/gi, "perchance")
+                    .replace(/\btruly\b/gi, "verily");
+                return "Hark! " + res.charAt(0).toUpperCase() + res.slice(1);
+            }
+
+            if (btnGenerateShakespeare) {
+                btnGenerateShakespeare.addEventListener('click', generateShakespeareanText);
+            }
+
+            if (btnCopyBardOutput) {
+                btnCopyBardOutput.addEventListener('click', () => {
+                    if (!lastGeneratedShakespeareText) return;
+                    const temp = document.createElement('textarea');
+                    temp.value = lastGeneratedShakespeareText;
+                    document.body.appendChild(temp);
+                    temp.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(temp);
+                    showToast("Copied Shakespearean text!");
+                });
+            }
+
+            if (btnInsertBardOutput) {
+                btnInsertBardOutput.addEventListener('click', () => {
+                    if (!lastGeneratedShakespeareText) return;
+                    insertTextAtCursor(editor, lastGeneratedShakespeareText + "\n\n");
+                    modalShakespeare.classList.add('hidden');
+                    showToast("Inserted Shakespearean passage into editor!");
+                });
+            }
+
+            const bardSearchInput = document.getElementById('bard-search-input');
+            const bardDictionaryList = document.getElementById('bard-dictionary-list');
+            const bardTabs = document.querySelectorAll('.bard-tab');
+            let activeBardCategory = 'ALL';
+
+            function renderBardDictionary() {
+                if (!bardDictionaryList) return;
+                const query = bardSearchInput ? bardSearchInput.value.toLowerCase().trim() : '';
+                bardDictionaryList.innerHTML = '';
+
+                const filtered = shakespeareDictionary.filter(item => {
+                    const matchesCategory = activeBardCategory === 'ALL' || item.category === activeBardCategory;
+                    const matchesSearch = item.modern.toLowerCase().includes(query) || 
+                                          item.bard.toLowerCase().includes(query) || 
+                                          item.note.toLowerCase().includes(query);
+                    return matchesCategory && matchesSearch;
+                });
+
+                if (filtered.length === 0) {
+                    bardDictionaryList.innerHTML = `<p class="text-center py-8 text-xs text-gray-500">No Shakespearean terms found matching "${query}".</p>`;
+                    return;
+                }
+
+                filtered.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = "bg-black/20 border border-[var(--border-color)] hover:border-amber-500/60 rounded-lg p-3 transition flex items-center justify-between gap-3 group cursor-pointer";
+                    card.innerHTML = `
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 mb-0.5">
+                                <span class="font-bold text-amber-400 text-sm">${item.bard}</span>
+                                <span class="text-[10px] bg-amber-950/60 text-amber-300 font-semibold border border-amber-800/50 px-1.5 py-0.2 rounded">${item.modern}</span>
+                            </div>
+                            <p class="text-xs text-gray-400">${item.note}</p>
+                        </div>
+                        <button title="Insert into Editor" class="px-2.5 py-1 bg-amber-600/80 hover:bg-amber-500 text-white text-xs font-semibold rounded flex items-center gap-1 shrink-0 opacity-80 group-hover:opacity-100 transition">
+                            <i class="fa-solid fa-plus text-[10px]"></i> Insert
+                        </button>
+                    `;
+
+                    card.addEventListener('click', () => {
+                        insertTextAtCursor(editor, item.bard + " ");
+                        showToast(`Inserted "${item.bard}" into text`);
+                    });
+
+                    bardDictionaryList.appendChild(card);
+                });
+            }
+
+            function insertTextAtCursor(textarea, textToInsert) {
+                const startPos = textarea.selectionStart;
+                const endPos = textarea.selectionEnd;
+                const oldVal = textarea.value;
+
+                textarea.value = oldVal.substring(0, startPos) + textToInsert + oldVal.substring(endPos, oldVal.length);
+                textarea.selectionStart = textarea.selectionEnd = startPos + textToInsert.length;
+                textarea.focus();
+
+                updateMetrics();
+                triggerAutoSave();
+            }
+
+            if (bardSearchInput) {
+                bardSearchInput.addEventListener('input', renderBardDictionary);
+            }
+
+            bardTabs.forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    bardTabs.forEach(t => {
+                        if (t.classList.contains('bard-tab')) {
+                            t.className = "bard-tab px-2.5 py-1 rounded-md bg-black/20 text-gray-300 hover:bg-gray-700 text-xs whitespace-nowrap";
+                        }
+                    });
+                    e.currentTarget.className = "bard-tab px-2.5 py-1 rounded-md bg-amber-600 text-white font-medium text-xs whitespace-nowrap";
+                    activeBardCategory = e.currentTarget.getAttribute('data-cat');
+                    renderBardDictionary();
+                });
+            });
+
+            // --- 9. FIND & REPLACE LOGIC ---
+            const findInput = document.getElementById('find-input');
+            const replaceInput = document.getElementById('replace-input');
+            const btnDoFind = document.getElementById('btn-do-find');
+            const btnDoReplace = document.getElementById('btn-do-replace');
+            const searchResultsInfo = document.getElementById('search-results-info');
+
+            btnDoFind.addEventListener('click', () => {
+                const term = findInput.value;
+                if (!term) return;
+                const regex = new RegExp(term, 'gi');
+                const matches = (editor.value.match(regex) || []).length;
+                searchResultsInfo.textContent = `Found ${matches} match(es).`;
+                searchResultsInfo.classList.remove('hidden');
+            });
+
+            btnDoReplace.addEventListener('click', () => {
+                const term = findInput.value;
+                const replacement = replaceInput.value;
+                if (!term) return;
+                const regex = new RegExp(term, 'g');
+                editor.value = editor.value.replace(regex, replacement);
+                updateMetrics();
+                triggerAutoSave();
+                searchResultsInfo.textContent = `Replaced all occurrences.`;
+                searchResultsInfo.classList.remove('hidden');
+                showToast('Replacement complete');
+            });
+
+            // --- 10. DICTIONARY / THESAURUS LOGIC ---
+            const dictSearchInput = document.getElementById('dict-search-input');
+            const btnSearchDict = document.getElementById('btn-search-dict');
+            const dictResults = document.getElementById('dict-results');
+
+            async function lookupWord() {
+                const word = dictSearchInput.value.trim();
+                if (!word) return;
+
+                dictResults.innerHTML = `<p class="text-xs text-indigo-400 animate-pulse"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Looking up definition...</p>`;
+
+                try {
+                    const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+                    if (!response.ok) throw new Error('Word not found');
+                    const data = await response.json();
+                    
+                    let html = `<div class="space-y-2">`;
+                    data[0].meanings.forEach(meaning => {
+                        html += `<div>
+                            <span class="text-xs font-bold text-indigo-400 capitalize">${meaning.partOfSpeech}</span>
+                            <ul class="list-disc list-inside text-xs space-y-1 mt-1">
+                                ${meaning.definitions.slice(0, 2).map(def => `<li>${def.definition}</li>`).join('')}
+                            </ul>
+                        </div>`;
+                    });
+                    html += `</div>`;
+                    dictResults.innerHTML = html;
+                } catch (err) {
+                    dictResults.innerHTML = `<p class="text-xs text-red-400">Definition not found. Check spelling and try again.</p>`;
+                }
+            }
+
+            btnSearchDict.addEventListener('click', lookupWord);
+            dictSearchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') lookupWord();
+            });
+
+            // --- 11. PREFERENCES & SETTINGS ---
+            const themeSelectors = document.querySelectorAll('#theme-selectors button');
+            const settingFont = document.getElementById('setting-font');
+            const settingFontSize = document.getElementById('setting-font-size');
+            const fontSizeVal = document.getElementById('font-size-val');
+            const settingSprintMinutes = document.getElementById('setting-sprint-minutes');
+
+            // --- 12. EXPORT FUNCTIONALITY (PDF, DOCX, TXT) ---
+            const exportMenu = document.getElementById('export-menu');
+            const exportPdfBtn = document.getElementById('export-pdf');
+            const exportDocxBtn = document.getElementById('export-docx');
+            const exportTxtBtn = document.getElementById('export-txt');
+
+            if (btnExport && exportMenu) {
+                btnExport.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    exportMenu.classList.toggle('hidden');
+                });
+                window.addEventListener('click', () => {
+                    exportMenu.classList.add('hidden');
+                });
+            }
+
+            // Export as TXT
+            if (exportTxtBtn) {
+                exportTxtBtn.addEventListener('click', () => {
+                    const content = editor.value;
+                    const title = docTitle.value || 'Untitled Draft';
+                    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${title.toLowerCase().replace(/[^a-z0-9]/g, '_')}.txt`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    showToast('Document exported as TXT');
+                });
+            }
+
+            // Export as PDF
+            if (exportPdfBtn) {
+                exportPdfBtn.addEventListener('click', () => {
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF();
+                    const title = docTitle.value || 'Untitled Draft';
+                    const content = editor.value;
+                    const typeVal = selectWriteupType ? selectWriteupType.value : 'Write-up';
+                    const genreVal = selectGenre ? selectGenre.value : 'General';
+
+                    doc.setFont("Helvetica", "bold");
+                    doc.setFontSize(20);
+                    doc.text(title, 20, 20);
+
+                    doc.setFont("Helvetica", "italic");
+                    doc.setFontSize(10);
+                    doc.setTextColor(100, 100, 100);
+                    doc.text(`Type: ${typeVal} | Genre: ${genreVal}`, 20, 28);
+
+                    doc.setLineWidth(0.5);
+                    doc.line(20, 32, 190, 32);
+
+                    doc.setFont("Times", "normal");
+                    doc.setFontSize(12);
+                    doc.setTextColor(30, 30, 30);
+
+                    const splitText = doc.splitTextToSize(content, 170);
+                    doc.text(splitText, 20, 40);
+
+                    doc.save(`${title.toLowerCase().replace(/[^a-z0-9]/g, '_')}.pdf`);
+                    showToast('Document exported as PDF');
+                });
+            }
+
+            // Export as DOCX
+            if (exportDocxBtn) {
+                exportDocxBtn.addEventListener('click', async () => {
+                    const { Document, Packer, Paragraph, TextRun, HeadingLevel } = window.docx;
+                    const title = docTitle.value || 'Untitled Draft';
+                    const content = editor.value;
+                    const typeVal = selectWriteupType ? selectWriteupType.value : 'Write-up';
+                    const genreVal = selectGenre ? selectGenre.value : 'General';
+
+                    const paragraphs = content.split('\n').map(line => 
+                        new Paragraph({
+                            children: [
+                                new TextRun({
+                                    text: line,
+                                    size: 24,
+                                    font: "Calibri"
+                                })
+                            ],
+                            spacing: { after: 120 }
+                        })
+                    );
+
+                    const doc = new Document({
+                        sections: [{
+                            properties: {},
+                            children: [
+                                new Paragraph({
+                                    text: title,
+                                    heading: HeadingLevel.TITLE,
+                                    spacing: { after: 100 }
+                                }),
+                                new Paragraph({
+                                    children: [
+                                        new TextRun({
+                                            text: `Type: ${typeVal} | Genre: ${genreVal}`,
+                                            italics: true,
+                                            color: "666666",
+                                            size: 20
+                                        })
+                                    ],
+                                    spacing: { after: 300 }
+                                }),
+                                ...paragraphs
+                            ]
+                        }]
+                    });
+
+                    try {
+                        const blob = await Packer.toBlob(doc);
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `${title.toLowerCase().replace(/[^a-z0-9]/g, '_')}.docx`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        showToast('Document exported as Word (.docx)');
+                    } catch (err) {
+                        console.error("DOCX Export Error:", err);
+                        showToast('Failed to export Word document');
+                    }
+                });
+            }
+
+            // Toast helper
+            function showToast(msg) {
+                const toast = document.getElementById('toast');
+                const toastMsg = document.getElementById('toast-msg');
+                toastMsg.textContent = msg;
+                toast.classList.remove('opacity-0', 'translate-y-10', 'pointer-events-none');
+                setTimeout(() => {
+                    toast.classList.add('opacity-0', 'translate-y-10', 'pointer-events-none');
+                }, 3000);
+            }
+
+            // Initialize App
+            loadSavedState();
+            addOutlineItem('Chapter 1: Opening Scene');
+        });
+    </script>
+</body>
+</html>
